@@ -16,10 +16,9 @@ def encrypt_columnar(plaintext, key):
             if len(a) > value:
                 result[value] = result[value] + list(a[value])
     cipher = ""
-    for key in keyvalues:
-        for index, arr in enumerate(result):
-            if index == key:
-                cipher = cipher + "".join(arr)
+    comparing_sorted = sorted(keyvalues.copy())
+    for index, key in enumerate(keyvalues):
+        cipher = cipher + "".join(result[keyvalues.index(comparing_sorted[index])])
     return cipher
 
 
@@ -38,8 +37,7 @@ def encrypt_columnar_myszkowski(plaintext, key):
     result = [[]] * len(key)
     double_values = list(set([x for x in keyvalues if keyvalues.count(x) > 1]))
     removed = []
-
-    for value in keyvalues:
+    for index, value in enumerate(keyvalues):
         if value in double_values:
             indices = [i for i, x in enumerate(keyvalues) if x == value]
             for a in arr:
@@ -52,8 +50,8 @@ def encrypt_columnar_myszkowski(plaintext, key):
         else:
             if value not in removed:
                 for a in arr:
-                    if len(a) > value + len(removed):
-                        result[value] = result[value] + list(a[value + len(removed)])
+                    if len(a) > index:
+                        result[value] = result[value] + list(a[index])
     cipher = ""
     for arr in result:
         cipher = cipher + "".join(arr)
@@ -123,51 +121,73 @@ def make_spaces(plaintext, key):
                     updated_text += plaintext[0]
                     plaintext = plaintext[1:]
                 updated_text += " "
-        print(updated_text)
     except IndexError:
         return updated_text
     return updated_text
 
 
 def decrpyt_columnar(ciphertext, key):
-    liste = [[]]
+    result = [[]]
     length_small = 0
     if len(ciphertext) % len(key) == 0:
-        liste *= (len(ciphertext) // len(key))
+        result *= (len(ciphertext) // len(key))
     else:
-        liste *= ((len(ciphertext) // len(key)) + 1)
+        result *= ((len(ciphertext) // len(key)) + 1)
         length_small = len(ciphertext) % len(key)
-    for index, l in enumerate(liste[:-1]):
-        liste[index] = [0] * len(key)
+    for index, l in enumerate(result[:-1]):
+        result[index] = [0] * len(key)
     if length_small != 0:
-        liste[-1] = [0] * length_small
+        result[-1] = [0] * length_small
     else:
-        liste[-1] = [0] * len(key)
-    print(liste)
+        result[-1] = [0] * len(key)
     keyvalues = get_order_of_keyword(key)
-    plaintext = ""
     counter = 0
-    for index, value in enumerate(keyvalues):
-        for i in range(len(liste)):
-            if length_small != 0 or i <= length_small:
-                print(i, )
-                liste[i][value] = ciphertext[counter]
-                counter+=1
-    print(liste)
+    comparing = keyvalues.copy()
+    comparing_sorted = sorted(comparing.copy())
 
+    for index, k in enumerate(keyvalues):
+        if comparing.index(comparing_sorted[index]) < length_small:
+            for i in range(len(ciphertext) // len(key) + 1):
+                result[i][comparing.index(comparing_sorted[index])] = ciphertext[counter]
+                counter += 1
+        else:
+            for i in range(len(ciphertext) // len(key)):
+                result[i][comparing.index(comparing_sorted[index])] = ciphertext[counter]
+                counter += 1
+    cipher = ""
+    for arr in result:
+        cipher = cipher + "".join(arr)
+    return cipher
 
 
 def decrypt_columnar_myszkowski(ciphertext, key):
-    print(ciphertext)
+    pass
 
 
-def encrypt_columnar_disrupted(ciphertext, key1, key2):
-    print(ciphertext)
+def decrypt_columnar_disrupted(ciphertext, key1, key2):
+    columnar = decrpyt_columnar(ciphertext, key1)
+    keyorder = get_order_of_keyword(key2)
+    indexe = []
+    current_index = 0
+    rounds = 0
+    for index, char in enumerate(columnar):
+        if keyorder[current_index] + rounds == index:
+            indexe.append(index)
+            rounds += (1 + keyorder[current_index])
+            if current_index == len(keyorder) - 1:
+                current_index = 0
+            else:
+                current_index += 1
+    plaintext_list = list(columnar)
+    for index in indexe:
+        plaintext_list[index] = ""
+    return "".join(plaintext_list)
+
 
 print(encrypt_columnar("BUNDESVERFASSUNGSGESETZ", "PARLAMENT"))
-print(encrypt_columnar_myszkowski("BUNDESVERFASSUNGSGESETZ", "PARLAMENTT"))
+print(encrypt_columnar_myszkowski("BUNDESVERFASSUNGSGESETZ", "PARLAMENT"))
 print(encrypt_columnar_disrupted("BUNDESVERFASSUNGSGESETZ", "PARLAMENT", "AUSTRIA"))
 
-print(decrpyt_columnar("BRG DA SSSN GZESE U  E  UFSTVNE", "PARLAMENT"))
+print(decrpyt_columnar("UASEUZVGDSTSNESBFENSERG", "PARLAMENT"))
 print(decrypt_columnar_myszkowski("UEAUSZNSEDSTEUZSNSNESRG", "PARLAMENT"))
-print(encrypt_columnar_disrupted("BRG DA SSSN GZESE U  E  UFSTVNE", "PARLAMENT", "AUSTRIA"))
+print(decrypt_columnar_disrupted("BRG DA SSSN GZESE U  E  UFSTVNE", "PARLAMENT", "AUSTRIA"))
