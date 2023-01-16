@@ -161,7 +161,51 @@ def decrpyt_columnar(ciphertext, key):
 
 
 def decrypt_columnar_myszkowski(ciphertext, key):
-    pass
+    keyvalues = get_order_of_keyword_myszkowski(key)
+    if len(set(keyvalues)) == len(keyvalues):
+        return decrpyt_columnar(ciphertext, key)
+    result = [[]]
+    length_small = 0
+    if len(ciphertext) % len(key) == 0:
+        result *= (len(ciphertext) // len(key))
+    else:
+        result *= ((len(ciphertext) // len(key)) + 1)
+        length_small = len(ciphertext) % len(key)
+    for index, l in enumerate(result[:-1]):
+        result[index] = [0] * len(key)
+    if length_small != 0:
+        result[-1] = [0] * length_small
+    else:
+        result[-1] = [0] * len(key)
+    counter = 0
+    counter_mys = 0
+    comparing_sorted = sorted(keyvalues.copy())
+    double_values = list(set([x for x in keyvalues if keyvalues.count(x) > 1]))
+    for index, value in enumerate(ciphertext):
+        if comparing_sorted[0] in double_values:
+            indices = [i for i, x in enumerate(keyvalues) if x == comparing_sorted[0]]
+            result[counter][indices[counter_mys]] = value
+            counter_mys += 1
+            if counter_mys >= len(indices):
+                counter += 1
+                counter_mys = 0
+            if counter >= len(result):
+                counter = 0
+                for _ in indices:
+                    comparing_sorted.remove(comparing_sorted[0])
+        else:
+            while len(result[counter]) < keyvalues.index(comparing_sorted[0]):
+                counter = 0
+                comparing_sorted.remove(comparing_sorted[0])
+            result[counter][keyvalues.index(comparing_sorted[0])] = value
+            counter += 1
+            if counter >= len(result) or len(result[counter]) <= keyvalues.index(comparing_sorted[0]):
+                counter = 0
+                comparing_sorted.remove(comparing_sorted[0])
+    cipher = ""
+    for arr in result:
+        cipher = cipher + "".join(arr)
+    return cipher
 
 
 def decrypt_columnar_disrupted(ciphertext, key1, key2):
@@ -189,5 +233,5 @@ print(encrypt_columnar_myszkowski("BUNDESVERFASSUNGSGESETZ", "PARLAMENT"))
 print(encrypt_columnar_disrupted("BUNDESVERFASSUNGSGESETZ", "PARLAMENT", "AUSTRIA"))
 
 print(decrpyt_columnar("UASEUZVGDSTSNESBFENSERG", "PARLAMENT"))
-print(decrypt_columnar_myszkowski("UEAUSZNSEDSTEUZSNSNESRG", "PARLAMENT"))
+print(decrypt_columnar_myszkowski("UEAUSZVGDSTSNESBFENSERG", "PARLAMENT"))
 print(decrypt_columnar_disrupted("BRG DA SSSN GZESE U  E  UFSTVNE", "PARLAMENT", "AUSTRIA"))
